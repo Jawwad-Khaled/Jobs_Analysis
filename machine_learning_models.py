@@ -91,11 +91,13 @@ class Regression_Tree():
         self.features = features
         self.number_of_random_features = number_of_random_features
         self.hessian = hessian
+        self.sse_decreases = np.array([])
         self.root = None
 
     def choose_best_split(self, X, y):
         self.features = np.random.choice(X.shape[1], self.number_of_random_features, replace=False)
         choices = []
+        initial_sse = np.sum((np.mean(y) - y)**2)
         for i in self.features:
             sorted_array = np.unique(X[:, i])
             previous_element = np.inf
@@ -132,9 +134,11 @@ class Regression_Tree():
                 best_sse = choice[2]
                 best_predictor = choice[0]
                 best_midpoint = choice[1]
+        self.sse_decreases[best_predictor] = initial_sse - best_sse
         return best_predictor, best_midpoint, True
     
     def fit(self, X, y):
+        self.sse_decreases = np.zeros((X.shape[1]))
         if self.hessian is None:
             self.hessian = np.ones(y.shape)
         self.features = X.shape[1]
@@ -164,6 +168,9 @@ class Regression_Tree():
             return self.traverse_tree(x, node.left)
         else:
             return self.traverse_tree(x, node.right)
+
+    def features_importance(self):
+        return self.sse_decreases / np.sum(self.sse_decreases)
 
 class Classification_Tree():
     def __init__(self, number_of_random_features, minimum_samples_split=250, max_depth=100, features=0):
